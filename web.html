@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Railway Info System</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background: #f0f0f0;
+      color: #333;
+    }
+    h1, h2 {
+      color: #004080;
+    }
+    .section {
+      background: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 30px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    input, select, button {
+      padding: 8px;
+      margin: 6px 0;
+      font-size: 16px;
+      width: 100%;
+      max-width: 400px;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    pre {
+      background: #e6f2ff;
+      padding: 10px;
+      white-space: pre-wrap;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🚆 Indian Railway Info Portal</h1>
+
+<!-- SEAT AVAILABILITY -->
+<div class="section">
+  <h2>🔍 Seat Availability</h2>
+  <form id="seatForm">
+    Train No: <input type="text" id="trainNo" required><br>
+    Source Code: <input type="text" id="source" required><br>
+    Destination Code: <input type="text" id="destination" required><br>
+    Date (DD-MM-YYYY): <input type="text" id="seatDate" required><br>
+    Class Code: <select id="classCode">
+      <option value="SL">Sleeper (SL)</option>
+      <option value="3A">3rd AC (3A)</option>
+      <option value="2A">2nd AC (2A)</option>
+      <option value="1A">1st AC (1A)</option>
+    </select><br>
+    Quota: <select id="quota">
+      <option value="GN">General</option>
+      <option value="LD">Ladies</option>
+    </select><br>
+    <button type="submit">Check Seats</button>
+  </form>
+  <div id="seatResult"></div>
+</div>
+
+<!-- LIVE LOCATION -->
+<div class="section">
+  <h2>📍 Live Train Location</h2>
+  <form id="liveForm">
+    Train No: <input type="text" id="liveTrain" required><br>
+    Date (DD-MM-YYYY): <input type="text" id="liveDate" required><br>
+    <button type="submit">Get Location</button>
+  </form>
+  <div id="liveResult"></div>
+</div>
+
+<!-- PNR STATUS -->
+<div class="section">
+  <h2>📄 PNR Status</h2>
+  <form id="pnrForm">
+    PNR Number: <input type="text" id="pnr" required><br>
+    <button type="submit">Check PNR</button>
+  </form>
+  <div id="pnrResult"></div>
+</div>
+
+<!-- TRAINS BETWEEN STATIONS -->
+<div class="section">
+  <h2>📅 Trains Between Stations</h2>
+  <form id="routeForm">
+    Source Code: <input type="text" id="routeSource" required><br>
+    Destination Code: <input type="text" id="routeDest" required><br>
+    Date (DD-MM-YYYY): <input type="text" id="routeDate" required><br>
+    <button type="submit">Find Trains</button>
+  </form>
+  <div id="routeResult"></div>
+</div>
+
+<script>
+const headers = {
+  "X-RapidAPI-Key": "YOUR_RAPIDAPI_KEY_HERE",
+  "X-RapidAPI-Host": "irctc1.p.rapidapi.com"
+};
+
+// SEAT AVAILABILITY
+document.getElementById("seatForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
+  const url = `https://irctc1.p.rapidapi.com/api/v1/checkSeatAvailability?trainNo=${trainNo.value}&sourceStationCode=${source.value}&destinationStationCode=${destination.value}&date=${seatDate.value}&classCode=${classCode.value}&quota=${quota.value}`;
+  const res = await fetch(url, { headers });
+  const data = await res.json();
+  const out = data?.data?.map(d => `${d.journeyDate}: ${d.availabilityStatus}`).join('\n') || "No data found";
+  document.getElementById("seatResult").innerHTML = `<pre>${out}</pre>`;
+});
+
+// LIVE LOCATION
+document.getElementById("liveForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
+  const url = `https://irctc1.p.rapidapi.com/api/v1/liveTrainStatus?trainNo=${liveTrain.value}&date=${liveDate.value}`;
+  const res = await fetch(url, { headers });
+  const data = await res.json();
+  document.getElementById("liveResult").innerHTML = `<pre>${data?.data?.position || "Live location not available"}</pre>`;
+});
+
+// PNR STATUS
+document.getElementById("pnrForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
+  const url = `https://irctc1.p.rapidapi.com/api/v1/getPNRStatus?pnrNumber=${pnr.value}`;
+  const res = await fetch(url, { headers });
+  const data = await res.json();
+  document.getElementById("pnrResult").innerHTML = `<pre>${JSON.stringify(data?.data, null, 2) || "PNR not found"}</pre>`;
+});
+
+// TRAINS BETWEEN STATIONS
+document.getElementById("routeForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
+  const url = `https://irctc1.p.rapidapi.com/api/v1/searchTrain?fromStationCode=${routeSource.value}&toStationCode=${routeDest.value}&dateOfJourney=${routeDate.value}`;
+  const res = await fetch(url, { headers });
+  const data = await res.json();
+  const trains = data?.data?.map(t => `${t.train_name} (${t.train_number}) - Departs: ${t.from_std}`) || ["No trains found"];
+  document.getElementById("routeResult").innerHTML = `<pre>${trains.join('\n')}</pre>`;
+});
+</script>
+
+</body>
+</html>
